@@ -32,8 +32,15 @@ final class CorsModuleTest extends ApiBaseTestCase
 
         $headers = $response->getHeaders();
         $this->assertArrayHasKey("Access-Control-Allow-Credentials", $headers);
+        $this->assertEquals('true', $headers["Access-Control-Allow-Credentials"][0]);
+
         $this->assertArrayHasKey("Access-Control-Allow-Origin", $headers);
+        $this->assertEquals(CORS_ORIGIN, $headers["Access-Control-Allow-Origin"][0]);
+
         $this->assertArrayHasKey("Access-Control-Allow-Headers", $headers);
+        $this->assertEquals(CORS_HEADERS, $headers["Access-Control-Allow-Headers"][0]);
+
         $this->assertArrayHasKey("Access-Control-Allow-Methods", $headers);
+        $this->assertEquals(CORS_METHODS, $headers["Access-Control-Allow-Methods"][0]);
     }
 }
