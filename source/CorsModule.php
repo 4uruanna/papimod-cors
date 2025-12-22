@@ -2,96 +2,63 @@
 
 namespace Papimod\Cors;
 
-use Papi\ApiModule;
+use Papi\PapiModule;
 use Papimod\Dotenv\DotEnvModule;
+use Papimod\HttpError\HttpErrorModule;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Slim\Psr7\Factory\ResponseFactory;
 
-final class CorsModule extends ApiModule
+final class CorsModule extends PapiModule
 {
-    public const DEFAULT_PRIORITY = 128;
-    public const DEFAULT_ORIGIN = "*";
-    public const DEFAULT_HEADERS = "*";
-    public const DEFAULT_METHODS = "GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD";
-
-    public function __construct()
+    public static function getPrerequisites(): array
     {
-        $this->prerequisite_list = [DotEnvModule::class];
-
-        $this->definition_list = [
-            ResponseFactoryInterface::class
-            => fn(ContainerInterface $container) => $container->get(ResponseFactory::class)
+        return [
+            DotEnvModule::class,
+            HttpErrorModule::class
         ];
-
-        $this->middleware_list = [CorsMiddleware::class];
     }
 
-    public function configure(): void
+    public static function getDefinitions(): array
     {
-        $this->defineCorsPriority();
-        $this->defineCorsOrigin();
-        $this->defineCorsHeaders();
-        $this->defineCorsMethods();
+        return [
+            ResponseFactoryInterface::class => fn(ContainerInterface $c) => $c->get(ResponseFactory::class)
+        ];
     }
 
-    public function defineCorsPriority(): void
+    public static function getMiddlewares(): array
     {
-        if (defined("CORS_PRIORITY") === false) {
-            $priority = self::DEFAULT_PRIORITY;
+        return [CorsMiddleware::class];
+    }
 
-            if (isset($_SERVER["CORS_PRIORITY"])) {
-                $priority = $_SERVER["CORS_PRIORITY"];
-            }
-
-            define("CORS_PRIORITY", $priority);
+    /**
+     * Configure the module
+     */
+    public static function configure(): void
+    {
+        if (defined("PAPI_CORS_ORIGIN") === false) {
+            $cors_origin = $_ENV["CORS_ORIGIN"] ?? "*";
+            define("PAPI_CORS_ORIGIN", $cors_origin);
         }
 
-        $_SERVER["CORS_PRIORITY"] = CORS_PRIORITY;
-    }
-
-    public function defineCorsOrigin(): void
-    {
-        if (defined("CORS_ORIGIN") === false) {
-            $origin = self::DEFAULT_ORIGIN;
-
-            if (isset($_SERVER["CORS_ORIGIN"])) {
-                $origin = $_SERVER["CORS_ORIGIN"];
-            }
-
-            define("CORS_ORIGIN", $origin);
+        if (defined("PAPI_CORS_MAX_AGE") === false) {
+            $cors_max_age = $_ENV["CORS_MAX_AGE"] ?? 3600;
+            define("PAPI_CORS_MAX_AGE", $cors_max_age);
         }
 
-        $_SERVER["CORS_ORIGIN"] = CORS_ORIGIN;
-    }
-
-    public function defineCorsHeaders(): void
-    {
-        if (defined("CORS_HEADERS") === false) {
-            $headers = self::DEFAULT_HEADERS;
-
-            if (isset($_SERVER["CORS_HEADERS"])) {
-                $headers = $_SERVER["CORS_HEADERS"];
-            }
-
-            define("CORS_HEADERS", $headers);
+        if (defined("PAPI_CORS_HEADERS") === false) {
+            $cors_headers = $_ENV["CORS_HEADERS"] ?? "*";
+            define("PAPI_CORS_HEADERS", $cors_headers);
         }
 
-        $_SERVER["CORS_HEADERS"] = CORS_HEADERS;
-    }
-
-    public function defineCorsMethods(): void
-    {
-        if (defined("CORS_METHODS") === false) {
-            $methods = self::DEFAULT_METHODS;
-
-            if (isset($_SERVER["CORS_METHODS"])) {
-                $methods = $_SERVER["CORS_METHODS"];
-            }
-
-            define("CORS_METHODS", $methods);
+        if (defined("PAPI_CORS_METHODS") === false) {
+            $cors_methods = $_ENV["CORS_METHODS"] ?? "GET, POST, PUT, PATCH, DELETE, OPTIONS";
+            define("PAPI_CORS_METHODS", $cors_methods);
         }
 
-        $_SERVER["CORS_METHODS"] = CORS_METHODS;
+        if (defined("PAPI_CORS_CREDENTIALS") === false) {
+            $cors_credentials = $_ENV["CORS_CREDENTIALS"] ?? "true";
+            define("PAPI_CORS_CREDENTIALS", $cors_credentials);
+        }
     }
 }
