@@ -60,5 +60,10 @@ final class CorsModule extends PapiModule
             $cors_credentials = $_ENV["CORS_CREDENTIALS"] ?? "true";
             define("PAPI_CORS_CREDENTIALS", $cors_credentials);
         }
+
+        if (defined("PAPI_CORS_EXPOSE_HEADERS") === false) {
+            $cors_expose_headers = $_ENV["CORS_EXPOSE_HEADERS"] ?? "*";
+            define("PAPI_CORS_EXPOSE_HEADERS", $cors_expose_headers);
+        }
     }
 }
