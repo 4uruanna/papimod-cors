@@ -2,13 +2,15 @@
 
 namespace Papimod\Cors;
 
-use Papi\Middleware;
+use Papi\interface\PapiMiddleware;
+use Papimod\HttpError\HttpErrorMiddleware;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Psr\Http\Message\ResponseInterface;
+use Slim\App;
 use Slim\Psr7\Factory\ResponseFactory;
 
-final class CorsMiddleware implements Middleware
+final class CorsMiddleware implements PapiMiddleware
 {
     private readonly ResponseFactory $responseFactory;
 
@@ -17,21 +19,27 @@ final class CorsMiddleware implements Middleware
         $this->responseFactory = $responseFactory;
     }
 
-    public static function getPriority(): int
+    public static function register(App $app, array &$middlewares_map): bool
     {
-        return (int) CORS_PRIORITY;
+        return isset($middlewares_map[HttpErrorMiddleware::class]);
     }
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        $is_options = $request->getMethod() === 'OPTIONS';
-        $response = ($is_options ? $this->responseFactory->createResponse() : $handler->handle($request))
-            ->withHeader('Access-Control-Allow-Credentials', 'true')
-            ->withHeader('Access-Control-Allow-Origin', CORS_ORIGIN)
-            ->withHeader('Access-Control-Allow-Headers', CORS_HEADERS)
-            ->withHeader('Access-Control-Allow-Methods', CORS_METHODS)
-            ->withHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
-            ->withHeader('Pragma', 'no-cache');
+        if ($request->getMethod() === 'OPTIONS') {
+            $response = $this->responseFactory->createResponse();
+        } else {
+            $response = $handler->handle($request);
+        }
+
+        $response = $response
+            ->withHeader("Access-Control-Allow-Origin", PAPI_CORS_ORIGIN)
+            ->withHeader("Access-Control-Allow-Headers", PAPI_CORS_HEADERS)
+            ->withHeader("Access-Control-Allow-Methods", PAPI_CORS_METHODS)
+            ->withHeader("Access-Control-Allow-Credentials", PAPI_CORS_CREDENTIALS)
+            ->withHeader("Access-Control-Max-Age", PAPI_CORS_MAX_AGE)
+            ->withHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0")
+            ->withHeader("Pragma", "no-cache");
 
         if (ob_get_contents()) {
             ob_clean();
